@@ -162,6 +162,22 @@ port = 8600
 `Get-NetTCPConnection` shows no owning process for HTTP.sys-reserved ports, which
 is why `netstat`/`netsh` are the reliable tools here.
 
+### Troubleshooting: `GEMINI_API_KEY is not set`
+
+Settings are resolved **once per server process** and cached (`get_settings` is
+`lru_cache`d), so editing `.env` and refreshing the browser changes nothing. Open
+**Configuration** in the sidebar: it shows the exact `.env` path, whether the file
+exists, and whether a key was loaded. Press **Reload settings** to drop the cache
+and re-read it, or restart the server.
+
+Two rules the loader follows:
+
+- A non-empty `GEMINI_API_KEY` environment variable wins over `.env`.
+- A **blank** one (`GEMINI_API_KEY=""`) is treated as unset, so it cannot hide a
+  real key in `.env`.
+
+On Streamlit Community Cloud there is no `.env`; use app **Secrets** instead.
+
 ## Summarize from the CLI
 
 ```bash

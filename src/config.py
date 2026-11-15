@@ -25,7 +25,12 @@ class ConfigError(RuntimeError):
 
 
 def load_dotenv(path: Path | None = None) -> None:
-    """Minimal .env reader. Real environment variables always win."""
+    """Minimal .env reader.
+
+    A non-empty environment variable wins over `.env`, but a *blank* one does
+    not: `GEMINI_API_KEY=""` in the environment must not hide the real value in
+    the file. (os.environ.setdefault would silently do exactly that.)
+    """
     env_path = path or PROJECT_ROOT / ".env"
     if not env_path.is_file():
         return
@@ -34,7 +39,11 @@ def load_dotenv(path: Path | None = None) -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if not value or os.environ.get(key, "").strip():
+            continue
+        os.environ[key] = value
 
 
 def _int_env(name: str, default: int) -> int:
@@ -96,6 +105,12 @@ def get_settings() -> Settings:
         temperature=_float_env("GEMINI_TEMPERATURE", 0.2),
         request_timeout_seconds=_int_env("REQUEST_TIMEOUT_SECONDS", 180),
     )
+
+
+def reload_settings() -> Settings:
+    """Drop the cached settings so an edited `.env` applies without a restart."""
+    get_settings.cache_clear()
+    return get_settings()
 
 
 def require_api_key() -> Settings:

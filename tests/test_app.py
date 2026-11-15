@@ -54,3 +54,17 @@ def test_options_are_wired_to_the_sidebar(monkeypatch: pytest.MonkeyPatch) -> No
     assert len(at.slider) == 1
     assert at.slider[0].value == 400
     assert any(toggle.label == "Stream output" for toggle in at.toggle)
+
+
+def test_configuration_panel_offers_a_reload(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    at = _run()
+
+    assert not at.exception
+    buttons = {button.label: button for button in at.button}
+    assert "Reload settings" in buttons
+
+    # Reload must clear the lru_cache and re-render cleanly.
+    buttons["Reload settings"].click().run()
+    assert not at.exception
+    assert any("GEMINI_API_KEY" in error.value for error in at.error)

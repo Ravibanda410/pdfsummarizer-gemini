@@ -29,7 +29,7 @@ from src.chains import (
     stream_summary,
     summarize_document,
 )
-from src.config import PROJECT_ROOT, Settings, get_settings
+from src.config import PROJECT_ROOT, Settings, get_settings, reload_settings
 from src.pdf_utils import PdfIngestError, count_tokens, extract_document
 
 SAMPLE_PDF = PROJECT_ROOT / "samples" / "sample.pdf"
@@ -79,6 +79,29 @@ def _result_key(file_hash: str, options: SummaryOptions) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def _config_diagnostics(settings: Settings) -> None:
+    """Say where the key came from, and let a changed .env take effect.
+
+    `get_settings` is cached per process, so editing `.env` while the server runs
+    has no effect until the cache is dropped - which is why "reload the page" is
+    not enough and this button exists.
+    """
+    env_file = PROJECT_ROOT / ".env"
+    with st.expander("Configuration", expanded=not settings.has_api_key):
+        st.caption("Settings are read once per server process.")
+        st.write("`.env` path:")
+        st.code(str(env_file), language=None)
+        st.write(f"File found: **{'yes' if env_file.is_file() else 'no'}**")
+        if settings.has_api_key:
+            st.write(f"API key loaded: **yes** ({len(settings.api_key)} characters)")
+        else:
+            st.write("API key loaded: **no**")
+            st.write("Add `GEMINI_API_KEY=...` to that file, then press **Reload settings**.")
+        if st.button("Reload settings", use_container_width=True):
+            reload_settings()
+            st.rerun()
+
+
 def _sidebar(settings: Settings) -> tuple[SummaryOptions, bool]:
     with st.sidebar:
         st.header("Options")
@@ -100,6 +123,8 @@ def _sidebar(settings: Settings) -> tuple[SummaryOptions, bool]:
             f"Single-pass under {settings.single_pass_token_limit:,} tokens · "
             f"chunks of {settings.chunk_size_tokens:,}"
         )
+
+        _config_diagnostics(settings)
 
         if st.button("Clear cached results", use_container_width=True):
             st.session_state.pop("results", None)
@@ -266,8 +291,9 @@ def main() -> None:
 
     if not settings.has_api_key:
         st.error(
-            "GEMINI_API_KEY is not set. Copy `.env.example` to `.env` and add your "
-            "key (or set it in Streamlit secrets), then reload."
+            "GEMINI_API_KEY is not set. Add it to `.env`, then press "
+            "**Reload settings** in the sidebar (or restart the server). "
+            "Streamlit Cloud reads it from app secrets instead."
         )
 
     options, stream = _sidebar(settings)
