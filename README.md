@@ -4,16 +4,16 @@ Summarize PDF documents with Google Gemini, orchestrated through LangChain, in a
 
 ## Status
 
-**Phase 2 complete** - LangChain + Gemini summarization works from the CLI, with
-automatic single-pass / map-reduce routing. The Streamlit UI is next.
+**Phase 3 complete** - the Streamlit UI works end to end: upload, live streaming,
+cached results and Markdown download. Hardening, tests and deployment remain.
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | Toolchain, API key validation, repo scaffold, first push | done |
 | 1 | PDF ingestion (pypdf extraction, token counting, chunking) | done |
 | 2 | LangChain + Gemini chains (single-pass, map-reduce fallback) | done |
-| 3 | Streamlit UI (upload, options, streaming, download) | next |
-| 4 | Chat with PDF, multi-document comparison | planned |
+| 3 | Streamlit UI (upload, options, streaming, download) | done |
+| 4 | Chat with PDF, multi-document comparison | next |
 | 5 | Tests, lint, CI, deployment | planned |
 
 ## Requirements
@@ -105,6 +105,28 @@ No sample file handy? Generate one:
 python scripts/make_sample_pdf.py --pages 5
 ```
 
+## Run the app
+
+```bash
+streamlit run app.py
+```
+
+Then open http://localhost:8501.
+
+What the UI does:
+
+- **Upload several PDFs at once** (or tick *Use the bundled sample PDF*).
+- **See cost before spending it** - pages, token estimate, chunk count, chosen
+  strategy and number of API calls are computed offline per document.
+- **Stream the answer** token by token, with map-reduce progress per chunk; switch
+  streaming off in the sidebar to get exact token usage instead.
+- **Cache results** in session state keyed by file hash + options, so changing a
+  slider and changing it back does not re-bill the API. *Clear cached results*
+  resets it.
+- **Download** each summary as Markdown.
+- **Friendly failures** - a bad key or a scanned PDF shows an actionable message
+  instead of a stack trace.
+
 ## Summarize from the CLI
 
 ```bash
@@ -155,7 +177,7 @@ Exit codes: `0` success, `1` ingest/model failure, `2` configuration error.
 ## Repository layout
 
 ```
-app.py                     Streamlit entry point (Phase 3)
+app.py                     Streamlit entry point
 src/config.py              settings from env / .env
 src/pdf_utils.py           extraction, token counting, page-aware chunking
 src/chains.py              Gemini + LangChain summarization (single-pass, map-reduce)
@@ -163,6 +185,7 @@ scripts/check_keys.py      API key + model validation gate
 scripts/inspect_pdf.py     offline PDF inspector (dry run)
 scripts/summarize.py       CLI summarizer
 scripts/make_sample_pdf.py generates a text PDF fixture
+.streamlit/config.toml     Streamlit server/theme config
 samples/sample.pdf         generated 3-page fixture
 tests/                     unit tests (Phase 5)
 requirements.txt           runtime dependencies
