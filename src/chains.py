@@ -15,9 +15,10 @@ one ran.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Iterator, Literal
+from typing import Literal
 
 from langchain_core.messages import BaseMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -115,6 +116,7 @@ class SummaryResult:
 # model + prompts
 # --------------------------------------------------------------------------- #
 
+
 def build_model(
     settings: Settings | None = None,
     *,
@@ -196,8 +198,7 @@ def _reduce_messages(
     notes: list[tuple[Chunk, str]], options: SummaryOptions, pages: int
 ) -> list[BaseMessage]:
     joined = "\n\n".join(
-        f"### Pages {chunk.page_start}-{chunk.page_end}\n{text.strip()}"
-        for chunk, text in notes
+        f"### Pages {chunk.page_start}-{chunk.page_end}\n{text.strip()}" for chunk, text in notes
     )
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -226,6 +227,7 @@ def _reduce_messages(
 # execution
 # --------------------------------------------------------------------------- #
 
+
 def plan_summary(
     document: Document,
     options: SummaryOptions | None = None,
@@ -242,9 +244,7 @@ def plan_summary(
     )
     if not chunks:
         raise SummarizationError("document produced no chunks to summarize")
-    return SummaryPlan(
-        strategy=STRATEGY_MAP_REDUCE, chunks=tuple(chunks), token_count=tokens
-    )
+    return SummaryPlan(strategy=STRATEGY_MAP_REDUCE, chunks=tuple(chunks), token_count=tokens)
 
 
 def _text_of(message) -> str:
@@ -253,8 +253,7 @@ def _text_of(message) -> str:
         return content.strip()
     if isinstance(content, list):  # multimodal-style content blocks
         return "".join(
-            block.get("text", "") if isinstance(block, dict) else str(block)
-            for block in content
+            block.get("text", "") if isinstance(block, dict) else str(block) for block in content
         ).strip()
     return str(content).strip()
 
@@ -266,8 +265,7 @@ def _delta_text(piece) -> str:
         return content
     if isinstance(content, list):
         return "".join(
-            block.get("text", "") if isinstance(block, dict) else str(block)
-            for block in content
+            block.get("text", "") if isinstance(block, dict) else str(block) for block in content
         )
     return str(content)
 

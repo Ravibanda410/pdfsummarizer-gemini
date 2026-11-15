@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
@@ -18,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.chains import (  # noqa: E402
     STRATEGY_MAP_REDUCE,
-    SummaryOptions,
     SummarizationError,
+    SummaryOptions,
     plan_summary,
     stream_summary,
     summarize_document,
@@ -30,10 +31,8 @@ from src.pdf_utils import PdfIngestError, extract_document  # noqa: E402
 
 def _utf8_stdout() -> None:
     for stream in (sys.stdout, sys.stderr):
-        try:
+        with contextlib.suppress(AttributeError, ValueError):
             stream.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
-        except (AttributeError, ValueError):
-            pass
 
 
 def _resolve_out(out: Path | None, pdf: Path) -> Path | None:
@@ -85,9 +84,7 @@ def summarize_one(
             if not as_json:
                 sys.stdout.write("\n")
         else:
-            result = summarize_document(
-                document, options, settings=settings, progress=progress
-            )
+            result = summarize_document(document, options, settings=settings, progress=progress)
             markdown = result.markdown
             if not as_json:
                 print(markdown)
@@ -121,8 +118,7 @@ def summarize_one(
         )
     else:
         print(
-            f"  done in {elapsed}s"
-            + (f" -> {saved}" if saved else ""),
+            f"  done in {elapsed}s" + (f" -> {saved}" if saved else ""),
             file=sys.stderr,
         )
     return 0
@@ -130,7 +126,8 @@ def summarize_one(
 
 def main(argv: list[str] | None = None) -> int:
     _utf8_stdout()
-    settings = get_settings()
+    # fail fast on malformed env config before doing any work
+    get_settings()
 
     parser = argparse.ArgumentParser(description="Summarize PDFs with Gemini + LangChain.")
     parser.add_argument("pdfs", nargs="+", type=Path)

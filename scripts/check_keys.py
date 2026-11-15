@@ -111,15 +111,12 @@ def main() -> int:
     if "--no-generate" in sys.argv:
         print("SKIP  generation check (--no-generate)")
     elif target is not None:
-        payload = {
-            "contents": [{"parts": [{"text": f"Reply with exactly: {EXPECTED_REPLY}"}]}]
-        }
+        payload = {"contents": [{"parts": [{"text": f"Reply with exactly: {EXPECTED_REPLY}"}]}]}
         try:
             result = request(f"{API_ROOT}/models/{model}:generateContent?key={key}", payload)
             candidate = (result.get("candidates") or [{}])[0]
             text = "".join(
-                part.get("text", "")
-                for part in candidate.get("content", {}).get("parts", [])
+                part.get("text", "") for part in candidate.get("content", {}).get("parts", [])
             ).strip()
             usage = result.get("usageMetadata", {})
             if EXPECTED_REPLY in text:

@@ -23,8 +23,8 @@ import streamlit as st
 
 from src.chains import (
     STRATEGY_MAP_REDUCE,
-    SummaryOptions,
     SummarizationError,
+    SummaryOptions,
     plan_summary,
     stream_summary,
     summarize_document,
@@ -107,8 +107,7 @@ def _sidebar(settings: Settings) -> tuple[SummaryOptions, bool]:
 
         st.divider()
         st.caption(
-            "Extraction runs locally. Nothing is sent to Gemini until you press "
-            "**Summarize**."
+            "Extraction runs locally. Nothing is sent to Gemini until you press **Summarize**."
         )
 
     return (
@@ -143,9 +142,7 @@ def _run_summary(
     try:
         if stream:
             pieces: list[str] = []
-            for delta in stream_summary(
-                document, options, settings=settings, progress=progress
-            ):
+            for delta in stream_summary(document, options, settings=settings, progress=progress):
                 pieces.append(delta)
                 output.markdown("".join(pieces))
             markdown = "".join(pieces).strip()
@@ -162,9 +159,7 @@ def _run_summary(
                 "estimated": True,
             }
         else:
-            summary = summarize_document(
-                document, options, settings=settings, progress=progress
-            )
+            summary = summarize_document(document, options, settings=settings, progress=progress)
             output.markdown(summary.markdown)
             result = {
                 "markdown": summary.markdown,
@@ -214,7 +209,9 @@ def _render_result(result: dict, name: str) -> None:
     )
 
 
-def _render_card(name: str, data: bytes, options: SummaryOptions, settings: Settings, stream: bool) -> None:
+def _render_card(
+    name: str, data: bytes, options: SummaryOptions, settings: Settings, stream: bool
+) -> None:
     with st.container(border=True):
         st.subheader(name)
 
@@ -275,17 +272,13 @@ def main() -> None:
 
     options, stream = _sidebar(settings)
 
-    uploaded = st.file_uploader(
-        "Drop one or more PDFs", type=["pdf"], accept_multiple_files=True
-    )
+    uploaded = st.file_uploader("Drop one or more PDFs", type=["pdf"], accept_multiple_files=True)
 
     documents: list[tuple[str, bytes]] = []
     if uploaded:
         for item in uploaded:
             documents.append((item.name, item.getvalue()))
-    elif SAMPLE_PDF.is_file() and st.checkbox(
-        "Use the bundled sample PDF", value=not uploaded
-    ):
+    elif SAMPLE_PDF.is_file() and st.checkbox("Use the bundled sample PDF", value=not uploaded):
         documents.append((SAMPLE_PDF.name, SAMPLE_PDF.read_bytes()))
 
     if not documents:

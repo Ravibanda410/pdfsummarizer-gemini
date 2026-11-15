@@ -10,9 +10,10 @@ from __future__ import annotations
 import io
 import math
 import re
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import BinaryIO, Iterable, Iterator
+from typing import BinaryIO
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -128,6 +129,7 @@ def count_tokens(text: str) -> int:
 # extraction
 # --------------------------------------------------------------------------- #
 
+
 def _normalise(raw: str) -> str:
     text = raw.replace("\x00", " ")
     text = _WHITESPACE_RE.sub(" ", text)
@@ -153,9 +155,7 @@ def _open_reader(source: str | Path | bytes | BinaryIO, password: str | None) ->
         except Exception as exc:  # pragma: no cover - pypdf internals
             raise PdfIngestError(f"encrypted PDF could not be opened: {exc}") from exc
         if not unlocked:
-            raise PdfIngestError(
-                "PDF is password protected; provide the password to read it"
-            )
+            raise PdfIngestError("PDF is password protected; provide the password to read it")
     return reader
 
 
@@ -194,6 +194,7 @@ def extract_document(
 # chunking
 # --------------------------------------------------------------------------- #
 
+
 def _word_windows(text: str, chunk_size: int, overlap: int) -> list[tuple[str, int]]:
     """Fallback chunker used when tiktoken is unavailable."""
     words = text.split()
@@ -213,9 +214,7 @@ def _word_windows(text: str, chunk_size: int, overlap: int) -> list[tuple[str, i
     return windows
 
 
-def _page_windows(
-    text: str, chunk_size: int, overlap: int
-) -> list[tuple[str, int]]:
+def _page_windows(text: str, chunk_size: int, overlap: int) -> list[tuple[str, int]]:
     enc = _encoding()
     if enc is None:
         return _word_windows(text, chunk_size, overlap)
@@ -259,11 +258,7 @@ def chunk_document(
         for text, tokens in _page_windows(page.text, chunk_size, overlap):
             if not text:
                 continue
-            if (
-                chunks
-                and tokens < MIN_CHUNK_TOKENS
-                and chunks[-1].page_end == page.number
-            ):
+            if chunks and tokens < MIN_CHUNK_TOKENS and chunks[-1].page_end == page.number:
                 previous = chunks[-1]
                 merged_text = f"{previous.text}\n{text}"
                 chunks[-1] = Chunk(

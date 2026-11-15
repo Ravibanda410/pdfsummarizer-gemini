@@ -81,9 +81,7 @@ def build_pdf(page_texts: list[str], path: Path) -> Path:
         ).encode("latin-1")
         stream = _content_stream(PAGE_HEADINGS[index % len(PAGE_HEADINGS)], text, index + 1)
         objects[content_id] = (
-            f"<< /Length {len(stream)} >>\nstream\n".encode("latin-1")
-            + stream
-            + b"\nendstream"
+            f"<< /Length {len(stream)} >>\nstream\n".encode("latin-1") + stream + b"\nendstream"
         )
 
     out = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")

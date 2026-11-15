@@ -1,11 +1,13 @@
 # PDF Summarizer with Gemini + LangChain
 
+[![CI](https://github.com/Ravibanda410/pdfsummarizer-gemini/actions/workflows/ci.yml/badge.svg)](https://github.com/Ravibanda410/pdfsummarizer-gemini/actions/workflows/ci.yml)
+
 Summarize PDF documents with Google Gemini, orchestrated through LangChain, in a Streamlit UI.
 
 ## Status
 
-**Phase 3 complete** - the Streamlit UI works end to end: upload, live streaming,
-cached results and Markdown download. Hardening, tests and deployment remain.
+**Phase 5 complete** - 41 offline tests, ruff lint/format, GitHub Actions CI and
+Streamlit Cloud deployment instructions are in place.
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -13,8 +15,8 @@ cached results and Markdown download. Hardening, tests and deployment remain.
 | 1 | PDF ingestion (pypdf extraction, token counting, chunking) | done |
 | 2 | LangChain + Gemini chains (single-pass, map-reduce fallback) | done |
 | 3 | Streamlit UI (upload, options, streaming, download) | done |
-| 4 | Chat with PDF, multi-document comparison | next |
-| 5 | Tests, lint, CI, deployment | planned |
+| 4 | Chat with PDF, multi-document comparison | planned |
+| 5 | Tests, lint, CI, deployment | done |
 
 ## Requirements
 
@@ -174,6 +176,43 @@ sample.pdf: Gemini request failed: Gemini rejected the API key. Check GEMINI_API
 
 Exit codes: `0` success, `1` ingest/model failure, `2` configuration error.
 
+## Tests and lint
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q                       # 41 tests, no network, no API key needed
+ruff check .                    # lint
+ruff format --check .           # formatting
+```
+
+The suite is deliberately offline: `tests/fakes.py` substitutes a fake chat model
+for Gemini, so the chain logic (strategy routing, call counts, token accounting,
+error mapping, streaming) is covered for free. `tests/test_app.py` runs the real
+Streamlit script through `AppTest` and asserts the UI renders without exceptions.
+
+CI (`.github/workflows/ci.yml`) runs lint + tests on Python 3.10 and 3.12. A
+separate `live-key` job validates `GEMINI_API_KEY` only when the repository secret
+exists, and uses `--no-generate` so it never bills.
+
+## Deploy to Streamlit Community Cloud
+
+1. Push to GitHub (done).
+2. Go to <https://share.streamlit.io> and sign in with GitHub.
+3. **Create app** → repository `Ravibanda410/pdfsummarizer-gemini`, branch `main`,
+   main file `app.py`.
+4. **Advanced settings → Secrets**, paste:
+
+   ```toml
+   GEMINI_API_KEY = "your-key-here"
+   GEMINI_MODEL = "gemini-3.1-flash-lite"
+   ```
+
+5. **Deploy**. `runtime.txt` pins Python 3.12; `app.py` reads Streamlit secrets as
+   environment variables, so no code change is needed.
+
+Add the same key as a repository secret (`GEMINI_API_KEY`) if you want the CI
+`live-key` job to verify it on every push.
+
 ## Repository layout
 
 ```
@@ -186,8 +225,9 @@ scripts/inspect_pdf.py     offline PDF inspector (dry run)
 scripts/summarize.py       CLI summarizer
 scripts/make_sample_pdf.py generates a text PDF fixture
 .streamlit/config.toml     Streamlit server/theme config
+tests/                     offline test suite (fake LLM, no network)
+.github/workflows/ci.yml   lint + tests + optional live key check
 samples/sample.pdf         generated 3-page fixture
-tests/                     unit tests (Phase 5)
 requirements.txt           runtime dependencies
 .env.example               environment template - copy to .env
 ```

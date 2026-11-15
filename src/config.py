@@ -92,9 +92,7 @@ def get_settings() -> Settings:
         model=os.environ.get("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL,
         chunk_size_tokens=chunk_size,
         chunk_overlap_tokens=overlap,
-        single_pass_token_limit=_int_env(
-            "SINGLE_PASS_TOKEN_LIMIT", DEFAULT_SINGLE_PASS_LIMIT
-        ),
+        single_pass_token_limit=_int_env("SINGLE_PASS_TOKEN_LIMIT", DEFAULT_SINGLE_PASS_LIMIT),
         temperature=_float_env("GEMINI_TEMPERATURE", 0.2),
         request_timeout_seconds=_int_env("REQUEST_TIMEOUT_SECONDS", 180),
     )

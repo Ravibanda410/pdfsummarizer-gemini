@@ -46,8 +46,7 @@ def inspect(path: Path, chunk_size: int, overlap: int, limit: int) -> dict:
         "strategy": "single-pass" if tokens <= limit else "map-reduce",
         "estimated_llm_calls": 1 if tokens <= limit else len(chunks) + 1,
         "chunk_plan": [
-            {"chunk": c.index + 1, "pages": c.pages, "tokens": c.token_count}
-            for c in chunks
+            {"chunk": c.index + 1, "pages": c.pages, "tokens": c.token_count} for c in chunks
         ],
     }
 
@@ -61,19 +60,13 @@ def print_report(report: dict, chunk_size: int, overlap: int, limit: int) -> Non
         print(f"  empty pages        : {shown}{extra}")
     print(f"  characters         : {report['characters']:,}")
     print(f"  tokens (estimate)  : {report['tokens']:,}")
-    print(
-        f"  chunks             : {report['chunks']} "
-        f"(size {chunk_size}, overlap {overlap})"
-    )
+    print(f"  chunks             : {report['chunks']} (size {chunk_size}, overlap {overlap})")
     if report["chunks"]:
         print(
             f"  tokens per chunk   : min {report['chunk_tokens_min']} / "
             f"avg {report['chunk_tokens_avg']} / max {report['chunk_tokens_max']}"
         )
-    print(
-        f"  strategy           : {report['strategy']} "
-        f"(single-pass limit {limit:,} tokens)"
-    )
+    print(f"  strategy           : {report['strategy']} (single-pass limit {limit:,} tokens)")
     print(f"  estimated API calls: {report['estimated_llm_calls']}")
 
 
@@ -96,9 +89,7 @@ def main(argv: list[str] | None = None) -> int:
         help=f"chunk overlap in tokens (default {settings.chunk_overlap_tokens})",
     )
     parser.add_argument("--json", action="store_true", help="emit JSON instead of text")
-    parser.add_argument(
-        "--show-chunks", action="store_true", help="list every chunk and its pages"
-    )
+    parser.add_argument("--show-chunks", action="store_true", help="list every chunk and its pages")
     args = parser.parse_args(argv)
 
     reports: list[dict] = []
@@ -123,7 +114,9 @@ def main(argv: list[str] | None = None) -> int:
             print_report(report, args.chunk_size, args.overlap, settings.single_pass_token_limit)
             if args.show_chunks:
                 for chunk in report["chunk_plan"]:
-                    print(f"    #{chunk['chunk']:>3}  {chunk['pages']:>10}  {chunk['tokens']:>6} tokens")
+                    print(
+                        f"    #{chunk['chunk']:>3}  {chunk['pages']:>10}  {chunk['tokens']:>6} tokens"
+                    )
             print()
 
     if args.json:
