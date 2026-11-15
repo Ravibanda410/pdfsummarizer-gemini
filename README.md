@@ -113,7 +113,7 @@ python scripts/make_sample_pdf.py --pages 5
 streamlit run app.py
 ```
 
-Then open http://localhost:8501.
+Then open the URL Streamlit prints (http://localhost:8501 by default).
 
 What the UI does:
 
@@ -128,6 +128,39 @@ What the UI does:
 - **Download** each summary as Markdown.
 - **Friendly failures** - a bad key or a scanned PDF shows an actionable message
   instead of a stack trace.
+
+### Troubleshooting: `HTTP Error 404` on localhost
+
+If the browser shows `HTTP Error 404. The requested resource is not found.` and the
+response headers contain `Server: Microsoft-HTTPAPI/2.0`, the port is held by
+Windows **HTTP.sys**, not by Streamlit. Some installed service reserved the URL
+(`netsh http show servicestate view=requestq verbose=yes` names it) and answers
+every request with its own 404 page, so Streamlit never gets the socket.
+
+Check what is listening and who owns it:
+
+```powershell
+netstat -ano | Select-String ":8501"
+netsh http show servicestate view=requestq verbose=yes | Select-String "8501" -Context 22,4
+```
+
+Then run on a free port instead of fighting the reservation:
+
+```bash
+streamlit run app.py --server.port 8600
+```
+
+To make that permanent for every local Streamlit project, put it in the
+**user-level** config at `~/.streamlit/config.toml` (keep the file free of a BOM -
+a byte-order mark makes Streamlit reject it and silently fall back to another port):
+
+```toml
+[server]
+port = 8600
+```
+
+`Get-NetTCPConnection` shows no owning process for HTTP.sys-reserved ports, which
+is why `netstat`/`netsh` are the reliable tools here.
 
 ## Summarize from the CLI
 
