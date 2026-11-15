@@ -4,15 +4,15 @@ Summarize PDF documents with Google Gemini, orchestrated through LangChain, in a
 
 ## Status
 
-**Phase 1 complete** - PDF ingestion, token budgeting and page-aware chunking work
-offline. Summarization chains land in Phase 2.
+**Phase 2 complete** - LangChain + Gemini summarization works from the CLI, with
+automatic single-pass / map-reduce routing. The Streamlit UI is next.
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | Toolchain, API key validation, repo scaffold, first push | done |
 | 1 | PDF ingestion (pypdf extraction, token counting, chunking) | done |
-| 2 | LangChain + Gemini chains (single-pass, map-reduce fallback) | next |
-| 3 | Streamlit UI (upload, options, streaming, download) | planned |
+| 2 | LangChain + Gemini chains (single-pass, map-reduce fallback) | done |
+| 3 | Streamlit UI (upload, options, streaming, download) | next |
 | 4 | Chat with PDF, multi-document comparison | planned |
 | 5 | Tests, lint, CI, deployment | planned |
 
@@ -105,14 +105,63 @@ No sample file handy? Generate one:
 python scripts/make_sample_pdf.py --pages 5
 ```
 
+## Summarize from the CLI
+
+```bash
+python scripts/summarize.py samples/sample.pdf
+```
+
+```
+sample.pdf: 3 pages, ~612 tokens, single-pass
+  Summarizing 3 pages in one pass
+## TL;DR
+This document serves as a synthetic test report designed to validate
+summarization tools...
+
+## Key Points
+* Each page features a unique heading and distinct prose [p.1].
+* Section 2 outlines the method and data [p.2].
+* Section 3 presents the results [p.3].
+
+## Action Items
+None identified.
+  done in 4.78s -> output/sample.md
+```
+
+| Flag | Effect |
+| --- | --- |
+| `--style` | `executive` (default), `bullets`, `detailed` |
+| `--max-words` | length target, default 400 |
+| `--language` | output language, default English |
+| `--no-action-items` | drop the Action Items section |
+| `--out` | `.md` file or directory, default `output/<name>.md` |
+| `--no-stream` | wait for the whole answer instead of streaming |
+| `--json` | emit metadata + markdown as JSON |
+
+**How the strategy is chosen.** If the extracted text is under
+`SINGLE_PASS_TOKEN_LIMIT` (300k tokens by default), one request summarizes the
+whole document. Above that, each page-bounded chunk is mapped to notes tagged
+with page numbers, then reduced into the final summary - so a 900-page report
+costs `chunks + 1` calls instead of failing.
+
+**Failures are readable, not raw JSON.** A bad key produces:
+
+```
+sample.pdf: Gemini request failed: Gemini rejected the API key. Check GEMINI_API_KEY in .env.
+```
+
+Exit codes: `0` success, `1` ingest/model failure, `2` configuration error.
+
 ## Repository layout
 
 ```
 app.py                     Streamlit entry point (Phase 3)
 src/config.py              settings from env / .env
 src/pdf_utils.py           extraction, token counting, page-aware chunking
+src/chains.py              Gemini + LangChain summarization (single-pass, map-reduce)
 scripts/check_keys.py      API key + model validation gate
 scripts/inspect_pdf.py     offline PDF inspector (dry run)
+scripts/summarize.py       CLI summarizer
 scripts/make_sample_pdf.py generates a text PDF fixture
 samples/sample.pdf         generated 3-page fixture
 tests/                     unit tests (Phase 5)
